@@ -3,15 +3,17 @@ fastapi==0.115.0
 uvicorn==0.30.6
 python-dotenv==1.0.1
 pydantic==2.9.2
+pydantic-settings==2.5.2
 
 # Document Processing
 docling==2.5.0
 
 # RAG & LLM
 llama-index==0.11.0
-llama-index-vector-stores-postgres==0.1.0
+llama-index-vector-stores-postgres==0.2.0
 llama-index-llms-ollama==0.3.0
 llama-index-embeddings-ollama==0.3.0
+llama-index-core==0.11.0
 
 # Multi-Agent
 crewai==0.67.0
@@ -26,9 +28,14 @@ sqlalchemy==2.0.35
 arize-phoenix==4.5.0
 opentelemetry-api==1.27.0
 opentelemetry-sdk==1.27.0
+opentelemetry-exporter-otlp-proto-grpc==1.27.0
+openinference-instrumentation-llama-index==2.2.4
+openinference-instrumentation-crewai==0.3.0
 
 # RAG Evaluation
 ragas==0.1.21
+datasets==2.21.0
+langchain-community==0.2.12
 
 # Utilities
 httpx==0.27.2
