@@ -3,19 +3,19 @@ from crewai import Agent, Task, Crew, Process
 from crewai.tools import BaseTool
 from typing import Optional
 from pydantic import Field
-from ingestion.pgvector_indexer import ChromaIndexer
+from ingestion.pgvector_indexer import PGVectorIndexer
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
 class DocumentRetrievalTool(BaseTool):
     name: str = "Document Retrieval Tool"
-    description: str = "Retrieves relevant document chunks from the ChromaDB knowledge base based on a search query."
-    indexer: Optional[ChromaIndexer] = Field(default=None, exclude=True)
+    description: str = "Retrieves relevant document chunks from PostgreSQL PGVector knowledge base."
+    indexer: Optional[PGVectorIndexer] = Field(default=None, exclude=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.indexer = ChromaIndexer()
+        self.indexer = PGVectorIndexer()
 
     def _run(self, query: str) -> str:
         try:
@@ -37,8 +37,8 @@ def build_crew() -> Crew:
     retrieval_tool = DocumentRetrievalTool()
     retriever_agent = Agent(
         role="Document Retriever",
-        goal="Retrieve the most relevant document chunks from the ChromaDB knowledge base for the given user query.",
-        backstory="You are an expert at semantic search and information retrieval using ChromaDB vector storage.",
+        goal="Retrieve the most relevant document chunks from PostgreSQL PGVector for the given query.",
+        backstory="You are an expert at semantic search using PostgreSQL PGVector.",
         tools=[retrieval_tool],
         verbose=True,
         allow_delegation=False,
@@ -47,14 +47,14 @@ def build_crew() -> Crew:
     reasoner_agent = Agent(
         role="Answer Reasoner",
         goal="Generate accurate, grounded answers based on retrieved document context.",
-        backstory="You are an expert at reading comprehension and synthesizing information from documents.",
+        backstory="You are an expert at reading comprehension and synthesizing information.",
         tools=[],
         verbose=True,
         allow_delegation=False,
     )
     validator_agent = Agent(
         role="Answer Validator",
-        goal="Validate the generated answer for accuracy, completeness and groundedness.",
+        goal="Validate the generated answer for accuracy and groundedness.",
         backstory="You are a quality assurance expert who reviews answers for factual grounding.",
         tools=[],
         verbose=True,

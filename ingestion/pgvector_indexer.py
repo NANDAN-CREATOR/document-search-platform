@@ -1,26 +1,22 @@
-"""Index nodes into ChromaDB using LlamaIndex."""
+"""Index nodes into PostgreSQL with PGVector using LlamaIndex."""
 import logging
-from pathlib import Path
 from typing import List, Optional
 
-import chromadb
 from llama_index.core import VectorStoreIndex, StorageContext
-from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_index.vector_stores.postgres import PGVectorStore
 from llama_index.core.schema import TextNode
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.core import Settings as LlamaSettings
 
 from config.settings import settings
+from config.database import init_pgvector
 
 logger = logging.getLogger(__name__)
 
 
-class ChromaIndexer:
-    """Index embeddings into ChromaDB using LlamaIndex."""
-
+class PGVectorIndexer:
     def __init__(self):
-        # Configure LlamaIndex global settings
         LlamaSettings.llm = Ollama(
             model=settings.ollama_model,
             base_url=settings.ollama_base_url,
@@ -30,36 +26,28 @@ class ChromaIndexer:
             model_name=settings.ollama_embedding_model,
             base_url=settings.ollama_base_url,
         )
-
-        # Create persist directory
-        Path(settings.chroma_persist_dir).mkdir(parents=True, exist_ok=True)
-
-        # Initialize ChromaDB client
-        self.chroma_client = chromadb.PersistentClient(
-            path=settings.chroma_persist_dir
-        )
-
-        # Get or create collection
-        self.chroma_collection = self.chroma_client.get_or_create_collection(
-            name=settings.chroma_collection_name
-        )
-
-        # Build LlamaIndex ChromaVectorStore
-        self.vector_store = ChromaVectorStore(
-            chroma_collection=self.chroma_collection
+        init_pgvector()
+        self.vector_store = PGVectorStore.from_params(
+            host=settings.postgres_host,
+            port=str(settings.postgres_port),
+            database=settings.postgres_db,
+            user=settings.postgres_user,
+            password=settings.postgres_password,
+            table_name=settings.vector_table_name,
+            embed_dim=settings.embedding_dimension,
+            hnsw_kwargs={
+                "hnsw_m": 16,
+                "hnsw_ef_construction": 64,
+                "hnsw_ef_search": 40,
+                "hnsw_dist_method": "vector_cosine_ops",
+            },
         )
         self.storage_context = StorageContext.from_defaults(
             vector_store=self.vector_store
         )
 
-        logger.info(
-            f"ChromaDB initialized at: {settings.chroma_persist_dir} "
-            f"| Collection: {settings.chroma_collection_name}"
-        )
-
     def index_nodes(self, nodes: List[TextNode]) -> VectorStoreIndex:
-        """Index nodes into ChromaDB."""
-        logger.info(f"Indexing {len(nodes)} nodes into ChromaDB...")
+        logger.info(f"Indexing {len(nodes)} nodes into PGVector...")
         index = VectorStoreIndex(
             nodes,
             storage_context=self.storage_context,
@@ -69,20 +57,12 @@ class ChromaIndexer:
         return index
 
     def load_index(self) -> VectorStoreIndex:
-        """Load existing index from ChromaDB."""
-        logger.info("Loading index from ChromaDB...")
-        index = VectorStoreIndex.from_vector_store(
+        return VectorStoreIndex.from_vector_store(
             self.vector_store,
             storage_context=self.storage_context,
         )
-        return index
 
     def get_retriever(self, similarity_top_k: Optional[int] = None):
-        """Get a retriever from the loaded index."""
         top_k = similarity_top_k or settings.similarity_top_k
         index = self.load_index()
         return index.as_retriever(similarity_top_k=top_k)
-
-    def get_doc_count(self) -> int:
-        """Get number of documents in collection."""
-        return self.chroma_collection.count()

@@ -1,7 +1,7 @@
 import logging
 from typing import List
 from crewai import Task
-from ingestion.pgvector_indexer import ChromaIndexer
+from ingestion.pgvector_indexer import PGVectorIndexer
 from prompts.prompt_manager import get_prompt
 from config.settings import settings
 
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class RetrievalAgent:
     def __init__(self):
-        self.indexer = ChromaIndexer()
+        self.indexer = PGVectorIndexer()
 
     def retrieve(self, query: str, top_k: int = None) -> List[dict]:
         top_k = top_k or settings.similarity_top_k
@@ -37,6 +37,6 @@ class RetrievalAgent:
     def build_retrieval_task(self, agent, query: str) -> Task:
         return Task(
             description=get_prompt("retrieval_prompt", query=query),
-            expected_output="A list of the most relevant document chunks with source filenames.",
+            expected_output="Relevant document chunks with source filenames.",
             agent=agent,
         )

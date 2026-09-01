@@ -9,9 +9,12 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1"
     ollama_embedding_model: str = "nomic-embed-text"
 
-    # ChromaDB (zero setup - stores locally)
-    chroma_persist_dir: str = "./chroma_db"
-    chroma_collection_name: str = "document_embeddings"
+    # PostgreSQL + PGVector
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_db: str = "document_search"
+    postgres_user: str = "postgres"
+    postgres_password: str = "postgres"
 
     # Arize Phoenix
     phoenix_host: str = "localhost"
@@ -30,11 +33,16 @@ class Settings(BaseSettings):
     data_dir: str = "./data"
 
     # Vector Store
+    vector_table_name: str = "document_embeddings"
+    embedding_dimension: int = 768
     similarity_top_k: int = 5
 
     @property
-    def phoenix_endpoint(self) -> str:
-        return f"http://{self.phoenix_host}:{self.phoenix_grpc_port}"
+    def postgres_connection_string(self) -> str:
+        return (
+            f"postgresql+psycopg2://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
 
     class Config:
         env_file = ".env"
