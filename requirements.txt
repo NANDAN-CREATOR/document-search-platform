@@ -21,7 +21,7 @@ crewai-tools==0.12.0
 
 # Vector Database
 psycopg2-binary==2.9.9
-pgvector==0.3.2
+pgvector==0.2.5
 sqlalchemy==2.0.35
 
 # Tracing & Observability
