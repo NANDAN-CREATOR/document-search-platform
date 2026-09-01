@@ -1,0 +1,137 @@
+openapi: 3.0.0
+info:
+  title: Document Search Platform API
+  description: Agentic RAG Document Search Platform with OpenWebUI integration
+  version: 1.0.0
+  contact:
+    name: Aman Nandan
+    url: https://nandan-creator.github.io/Freelance_Portfolio
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Basic health check
+      tags: [Health]
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /health/dependencies:
+    get:
+      summary: Check all dependencies
+      tags: [Health]
+      responses:
+        '200':
+          description: Dependency status
+
+  /api/v1/search:
+    post:
+      summary: Search documents using Agentic RAG
+      tags: [Search]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  example: What is the main topic of the document?
+                top_k:
+                  type: integer
+                  default: 5
+      responses:
+        '200':
+          description: Search result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: string
+                  answer:
+                    type: string
+                  sources:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        filename:
+                          type: string
+                        score:
+                          type: number
+                  chunks_retrieved:
+                    type: integer
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+
+  /api/v1/v1/chat/completions:
+    post:
+      summary: OpenWebUI-compatible chat completions endpoint
+      tags: [Search]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                model:
+                  type: string
+                  default: document-search
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role:
+                        type: string
+                      content:
+                        type: string
+      responses:
+        '200':
+          description: Chat completion response
+
+  /api/v1/ingest:
+    post:
+      summary: Trigger document ingestion pipeline
+      tags: [Ingestion]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data_dir:
+                  type: string
+                  example: ./data
+      responses:
+        '200':
+          description: Ingestion accepted
+        '409':
+          description: Ingestion already in progress
+
+  /api/v1/ingest/status:
+    get:
+      summary: Get ingestion pipeline status
+      tags: [Ingestion]
+      responses:
+        '200':
+          description: Current ingestion status
