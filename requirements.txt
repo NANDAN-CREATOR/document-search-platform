@@ -15,9 +15,8 @@ llama-index-llms-ollama==0.3.0
 llama-index-embeddings-ollama==0.3.0
 llama-index-core==0.11.0.post1
 
-# Multi-Agent
+# Multi-Agent (crewai-tools removed - we implement custom tools)
 crewai>=0.67.0,<0.80.0
-crewai-tools>=0.14.0,<0.20.0
 
 # Vector Database
 psycopg2-binary==2.9.9
