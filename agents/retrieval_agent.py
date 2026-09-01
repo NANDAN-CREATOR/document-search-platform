@@ -1,7 +1,7 @@
 import logging
 from typing import List
 from crewai import Task
-from ingestion.pgvector_indexer import PGVectorIndexer
+from ingestion.pgvector_indexer import ChromaIndexer
 from prompts.prompt_manager import get_prompt
 from config.settings import settings
 
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class RetrievalAgent:
     def __init__(self):
-        self.indexer = PGVectorIndexer()
+        self.indexer = ChromaIndexer()
 
     def retrieve(self, query: str, top_k: int = None) -> List[dict]:
         top_k = top_k or settings.similarity_top_k

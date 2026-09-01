@@ -9,20 +9,14 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1"
     ollama_embedding_model: str = "nomic-embed-text"
 
-    # PostgreSQL + PGVector
-    postgres_host: str = "localhost"
-    postgres_port: int = 5432
-    postgres_db: str = "document_search"
-    postgres_user: str = "postgres"
-    postgres_password: str = "postgres"
+    # ChromaDB (zero setup - stores locally)
+    chroma_persist_dir: str = "./chroma_db"
+    chroma_collection_name: str = "document_embeddings"
 
     # Arize Phoenix
     phoenix_host: str = "localhost"
     phoenix_port: int = 6006
     phoenix_grpc_port: int = 4317
-
-    # OpenWebUI
-    openwebui_base_url: str = "http://localhost:3000"
 
     # API
     api_host: str = "0.0.0.0"
@@ -36,16 +30,7 @@ class Settings(BaseSettings):
     data_dir: str = "./data"
 
     # Vector Store
-    vector_table_name: str = "document_embeddings"
-    embedding_dimension: int = 768
     similarity_top_k: int = 5
-
-    @property
-    def postgres_connection_string(self) -> str:
-        return (
-            f"postgresql+psycopg2://{self.postgres_user}:{self.postgres_password}"
-            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
-        )
 
     @property
     def phoenix_endpoint(self) -> str:

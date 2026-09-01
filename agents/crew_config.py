@@ -3,20 +3,19 @@ from crewai import Agent, Task, Crew, Process
 from crewai.tools import BaseTool
 from typing import Optional
 from pydantic import Field
-from ingestion.pgvector_indexer import PGVectorIndexer
-from prompts.prompt_manager import get_prompt
+from ingestion.pgvector_indexer import ChromaIndexer
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
 class DocumentRetrievalTool(BaseTool):
     name: str = "Document Retrieval Tool"
-    description: str = "Retrieves relevant document chunks from the knowledge base based on a search query."
-    indexer: Optional[PGVectorIndexer] = Field(default=None, exclude=True)
+    description: str = "Retrieves relevant document chunks from the ChromaDB knowledge base based on a search query."
+    indexer: Optional[ChromaIndexer] = Field(default=None, exclude=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.indexer = PGVectorIndexer()
+        self.indexer = ChromaIndexer()
 
     def _run(self, query: str) -> str:
         try:
@@ -38,8 +37,8 @@ def build_crew() -> Crew:
     retrieval_tool = DocumentRetrievalTool()
     retriever_agent = Agent(
         role="Document Retriever",
-        goal="Retrieve the most relevant document chunks from the knowledge base for the given user query.",
-        backstory="You are an expert at semantic search and information retrieval. You use the Document Retrieval Tool to find the most relevant document passages.",
+        goal="Retrieve the most relevant document chunks from the ChromaDB knowledge base for the given user query.",
+        backstory="You are an expert at semantic search and information retrieval using ChromaDB vector storage.",
         tools=[retrieval_tool],
         verbose=True,
         allow_delegation=False,
