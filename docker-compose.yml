@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: document_search
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama_data:/root/.ollama
+
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    ports:
+      - '6006:6006'
+      - '4317:4317'
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    ports:
+      - '3000:3000'
+    environment:
+      - OPENAI_API_BASE_URL=http://api:8000/v1
+    depends_on:
+      - api
+
+  api:
+    build: .
+    ports:
+      - '8000:8000'
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - ollama
+      - phoenix
+    volumes:
+      - ./prompts:/app/prompts
+      - ./data:/app/data
+
+volumes:
+  postgres_data:
+  ollama_data:

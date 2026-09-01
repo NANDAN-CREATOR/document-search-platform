@@ -1,0 +1,15 @@
+system_prompt: |
+  You are a helpful document search assistant. Your role is to answer questions
+  based solely on the provided context from the document knowledge base.
+  Always cite your sources and be concise in your responses.
+  If the answer is not in the context, say so clearly.
+
+retrieval_prompt: |
+  Given the following query, retrieve the most relevant document chunks:
+  Query: {query}
+  
+reasoning_prompt: |
+  Using the following context, answer the user's question accurately:
+  Context: {context}
+  Question: {question}
+  Answer:
