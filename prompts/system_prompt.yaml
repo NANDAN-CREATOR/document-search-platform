@@ -1,15 +1,35 @@
 system_prompt: |
-  You are a helpful document search assistant. Your role is to answer questions
-  based solely on the provided context from the document knowledge base.
-  Always cite your sources and be concise in your responses.
-  If the answer is not in the context, say so clearly.
+  You are a helpful and precise document search assistant. Your role is to
+  answer questions based solely on the provided context from the document
+  knowledge base. Always cite the source document in your response.
+  If the answer is not found in the context, clearly state:
+  'I could not find relevant information in the provided documents.'
+  Be concise, factual, and structured in your responses.
 
 retrieval_prompt: |
-  Given the following query, retrieve the most relevant document chunks:
+  Retrieve the most relevant document chunks for the following query.
+  Focus on semantic relevance and factual accuracy.
   Query: {query}
-  
+
 reasoning_prompt: |
-  Using the following context, answer the user's question accurately:
+  You are answering a user question based on retrieved document context.
+  Context:
+  {context}
+  Question: {question}
+  Instructions:
+  - Answer only from the provided context
+  - Be concise and factual
+  - Cite the source document name
+  - If context is insufficient, say so clearly
+  Answer:
+
+validation_prompt: |
+  Review the following answer for accuracy and groundedness.
   Context: {context}
   Question: {question}
-  Answer:
+  Answer: {answer}
+  Check:
+  1. Is the answer grounded in the context?
+  2. Are there any hallucinations?
+  3. Is the answer complete?
+  Provide a brief validation report.
