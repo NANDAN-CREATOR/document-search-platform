@@ -1,24 +1,24 @@
-"""Document preprocessing using Docling."""
+"""Document preprocessing using Docling - OCR disabled for Windows compatibility."""
 import logging
 from pathlib import Path
 from typing import List, Dict, Any
-
-from docling.document_converter import DocumentConverter
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import PdfPipelineOptions
-from docling.document_converter import PdfFormatOption
 
 logger = logging.getLogger(__name__)
 
 
 class DoclingProcessor:
-    """Process PDF documents using Docling."""
+    """Process PDF documents using Docling without OCR."""
 
     def __init__(self):
+        from docling.document_converter import DocumentConverter
+        from docling.datamodel.base_models import InputFormat
+        from docling.datamodel.pipeline_options import PdfPipelineOptions
+        from docling.document_converter import PdfFormatOption
+
+        # Disable OCR and EasyOCR to avoid torch/DLL issues on Windows
         pipeline_options = PdfPipelineOptions()
-        pipeline_options.do_ocr = True
+        pipeline_options.do_ocr = False
         pipeline_options.do_table_structure = True
-        pipeline_options.table_structure_options.do_cell_matching = True
 
         self.converter = DocumentConverter(
             format_options={
@@ -27,6 +27,7 @@ class DoclingProcessor:
                 )
             }
         )
+        logger.info("DoclingProcessor initialized (OCR disabled)")
 
     def process_pdf(self, pdf_path: str) -> Dict[str, Any]:
         """Process a single PDF and return structured content."""
@@ -37,20 +38,15 @@ class DoclingProcessor:
         logger.info(f"Processing PDF: {path.name}")
         result = self.converter.convert(str(path))
         doc = result.document
-
-        # Extract full markdown text
         markdown_text = doc.export_to_markdown()
 
-        # Extract metadata
         metadata = {
             "filename": path.name,
             "file_path": str(path.absolute()),
-            "num_pages": len(doc.pages) if hasattr(doc, 'pages') else 0,
             "source": path.name,
         }
 
         logger.info(f"Processed {path.name}: {len(markdown_text)} chars")
-
         return {
             "text": markdown_text,
             "metadata": metadata,
@@ -70,7 +66,6 @@ class DoclingProcessor:
 
         logger.info(f"Found {len(pdf_files)} PDF files")
         documents = []
-
         for pdf_file in pdf_files:
             try:
                 doc = self.process_pdf(str(pdf_file))
