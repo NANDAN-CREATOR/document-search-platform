@@ -3,31 +3,63 @@ RAGAs evaluation for the Document Search Platform.
 
 Run:
     python -m evaluation.ragas_eval
-
-Or with custom questions:
-    python -m evaluation.ragas_eval --questions-file eval_questions.json
 """
+import sys
+import types
 import json
 import logging
 import argparse
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-from datasets import Dataset
-from ragas import evaluate
-from ragas.metrics import (
+# ----------------------------------------------------------------------
+# Patch: stub out the missing langchain_community.chat_models.vertexai
+# module that old ragas versions try to import.
+# This does NOT affect any other code - only fills the missing slot.
+# ----------------------------------------------------------------------
+def _patch_missing_vertexai():
+    try:
+        import langchain_community.chat_models.vertexai  # noqa: F401
+    except ImportError:
+        # Build minimal stub modules so ragas can import without crashing
+        class _ChatVertexAI:
+            pass
+
+        stub = types.ModuleType("langchain_community.chat_models.vertexai.stub")
+        stub.ChatVertexAI = _ChatVertexAI
+
+        # Ensure parent modules exist in sys.modules
+        for mod_name in [
+            "langchain_community",
+            "langchain_community.chat_models",
+            "langchain_community.chat_models.vertexai",
+        ]:
+            if mod_name not in sys.modules:
+                m = types.ModuleType(mod_name)
+                sys.modules[mod_name] = m
+
+        sys.modules["langchain_community.chat_models.vertexai.stub"] = stub
+        sys.modules["langchain_community.chat_models.vertexai"].ChatVertexAI = _ChatVertexAI
+
+
+_patch_missing_vertexai()
+
+# Now safe to import ragas
+from datasets import Dataset  # noqa: E402
+from ragas import evaluate  # noqa: E402
+from ragas.metrics import (  # noqa: E402
     faithfulness,
     answer_relevancy,
     context_precision,
     context_recall,
 )
+
 from config.settings import settings
 from agents.retrieval_agent import RetrievalAgent
 from agents.rag_pipeline import AgenticRAGPipeline
 
 logger = logging.getLogger(__name__)
 
-# Default evaluation questions
 DEFAULT_QUESTIONS: List[str] = [
     "What is the main topic of the documents?",
     "Summarise the key findings in the knowledge base.",
@@ -51,14 +83,12 @@ class RAGEvaluator:
         questions: List[str],
         ground_truths: Optional[List[List[str]]] = None,
     ) -> Dataset:
-        """Run the pipeline for every question and collect answers + contexts."""
         data: Dict[str, list] = {
             "question": [],
             "answer": [],
             "contexts": [],
             "ground_truths": ground_truths if ground_truths else [["N/A"]] * len(questions),
         }
-
         for idx, question in enumerate(questions, 1):
             logger.info(f"[{idx}/{len(questions)}] Running: {question}")
             try:
@@ -73,7 +103,6 @@ class RAGEvaluator:
                 data["question"].append(question)
                 data["answer"].append("")
                 data["contexts"].append([""])
-
         return Dataset.from_dict(data)
 
     def evaluate_pipeline(
@@ -82,20 +111,12 @@ class RAGEvaluator:
         ground_truths: Optional[List[List[str]]] = None,
         output_path: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Evaluate and return a metrics dict; optionally save JSON report."""
         logger.info(f"Starting RAGAs evaluation on {len(questions)} question(s)...")
-
         dataset = self.prepare_eval_dataset(questions, ground_truths)
-
         metrics = [faithfulness, answer_relevancy, context_precision]
         if ground_truths:
             metrics.append(context_recall)
-            logger.info("Ground truths provided - including context_recall.")
-        else:
-            logger.info("No ground truths - skipping context_recall.")
-
         results = evaluate(dataset=dataset, metrics=metrics)
-
         output: Dict[str, Any] = {
             "faithfulness": float(results["faithfulness"]),
             "answer_relevancy": float(results["answer_relevancy"]),
@@ -103,7 +124,6 @@ class RAGEvaluator:
         }
         if ground_truths:
             output["context_recall"] = float(results["context_recall"])
-
         output["num_questions"] = len(questions)
         output["settings"] = {
             "model": settings.ollama_model,
@@ -111,14 +131,11 @@ class RAGEvaluator:
             "similarity_top_k": settings.similarity_top_k,
             "data_dir": settings.data_dir,
         }
-
         logger.info(f"RAGAs results: {output}")
         _print_report(output)
-
         if output_path:
             Path(output_path).write_text(json.dumps(output, indent=2))
             logger.info(f"Report saved to: {output_path}")
-
         return output
 
 
@@ -140,19 +157,9 @@ def _print_report(metrics: Dict[str, Any]) -> None:
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run RAGAs evaluation on the Document Search Platform.")
-    parser.add_argument(
-        "--questions-file",
-        type=str,
-        default=None,
-        help='Format: {"questions": [...], "ground_truths": [[...], ...]}',
-    )
-    parser.add_argument(
-        "--output",
-        type=str,
-        default="evaluation/ragas_report.json",
-        help="Path to write the JSON report.",
-    )
+    parser = argparse.ArgumentParser(description="Run RAGAs evaluation.")
+    parser.add_argument("--questions-file", type=str, default=None)
+    parser.add_argument("--output", type=str, default="evaluation/ragas_report.json")
     return parser.parse_args()
 
 
