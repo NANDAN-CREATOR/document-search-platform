@@ -27,9 +27,7 @@ from agents.rag_pipeline import AgenticRAGPipeline
 
 logger = logging.getLogger(__name__)
 
-# ------------------------------------------------------------------------
-# Default evaluation questions — replace / extend with domain-specific ones
-# ------------------------------------------------------------------------
+# Default evaluation questions
 DEFAULT_QUESTIONS: List[str] = [
     "What is the main topic of the documents?",
     "Summarise the key findings in the knowledge base.",
@@ -38,7 +36,7 @@ DEFAULT_QUESTIONS: List[str] = [
     "What conclusions or recommendations are made?",
 ]
 
-DEFAULT_GROUND_TRUTHS: Optional[List[List[str]]] = None  # Set to None for reference-free metrics
+DEFAULT_GROUND_TRUTHS: Optional[List[List[str]]] = None
 
 
 class RAGEvaluator:
@@ -48,9 +46,6 @@ class RAGEvaluator:
         self.retrieval_agent = RetrievalAgent()
         self.pipeline = AgenticRAGPipeline()
 
-    # --------------------------------------------------------------------
-    # Dataset builder
-    # --------------------------------------------------------------------
     def prepare_eval_dataset(
         self,
         questions: List[str],
@@ -65,12 +60,11 @@ class RAGEvaluator:
         }
 
         for idx, question in enumerate(questions, 1):
-            logger.info(f"[{idx}/{len(questions)}] Running pipeline for: {question!2}")
+            logger.info(f"[{idx}/{len(questions)}] Running: {question}")
             try:
                 result = self.pipeline.run(question)
                 chunks = self.retrieval_agent.retrieve(question)
                 contexts = [c["text"] for c in chunks if c.get("text")]
-
                 data["question"].append(question)
                 data["answer"].append(result.get("answer", ""))
                 data["contexts"].append(contexts if contexts else [""])
@@ -82,9 +76,6 @@ class RAGEvaluator:
 
         return Dataset.from_dict(data)
 
-    # --------------------------------------------------------------------
-    # Main evaluation
-    # --------------------------------------------------------------------
     def evaluate_pipeline(
         self,
         questions: List[str],
@@ -96,13 +87,12 @@ class RAGEvaluator:
 
         dataset = self.prepare_eval_dataset(questions, ground_truths)
 
-        # Choose metrics — context_recall requires ground_truths
         metrics = [faithfulness, answer_relevancy, context_precision]
         if ground_truths:
             metrics.append(context_recall)
-            logger.info("Ground truths provided — including context_recall metric.")
+            logger.info("Ground truths provided - including context_recall.")
         else:
-            logger.info("No ground truths — skipping context_recall (requires references).")
+            logger.info("No ground truths - skipping context_recall.")
 
         results = evaluate(dataset=dataset, metrics=metrics)
 
@@ -132,15 +122,11 @@ class RAGEvaluator:
         return output
 
 
-# ------------------------------------------------------------------------
-# Pretty-print
-# ------------------------------------------------------------------------
 def _print_report(metrics: Dict[str, Any]) -> None:
     print("\n" + "=" * 55)
     print("  RAGAs Evaluation Report")
     print("=" * 55)
-    score_keys = ["faithfulness", "answer_relevancy", "context_precision", "context_recall"]
-    for key in score_keys:
+    for key in ["faithfulness", "answer_relevancy", "context_precision", "context_recall"]:
         if key in metrics:
             bar = "#" * int(metrics[key] * 20)
             print(f"  {key:<22} {metrics[key]:.4f}  [{bar:<20}]")
@@ -153,42 +139,33 @@ def _print_report(metrics: Dict[str, Any]) -> None:
     print("=" * 55 + "\n")
 
 
-# ------------------------------------------------------------------------
-# CLI entry-point
-# ------------------------------------------------------------------------
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run RAGAs evaluation on the Document Search Platform.")
     parser.add_argument(
         "--questions-file",
         type=str,
         default=None,
-        help="Path to a JSON file with evaluation questions. "
-             'Format: {"questions": [...], "ground_truths": [[...], ...]}',
+        help='Format: {"questions": [...], "ground_truths": [[...], ...]}',
     )
     parser.add_argument(
         "--output",
         type=str,
         default="evaluation/ragas_report.json",
-        help="Path to write the JSON evaluation report (default: evaluation/ragas_report.json).",
+        help="Path to write the JSON report.",
     )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
-
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
     args = _parse_args()
-
     questions = DEFAULT_QUESTIONS
     ground_truths = DEFAULT_GROUND_TRUTHS
-
     if args.questions_file:
         data = json.loads(Path(args.questions_file).read_text())
         questions = data["questions"]
         ground_truths = data.get("ground_truths")
-
-    evaluator = RAGEvaluator()
-    evaluator.evaluate_pipeline(
+    RAGEvaluator().evaluate_pipeline(
         questions=questions,
         ground_truths=ground_truths,
         output_path=args.output,
