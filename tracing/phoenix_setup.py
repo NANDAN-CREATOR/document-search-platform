@@ -1,47 +1,49 @@
+"""Arize Phoenix tracing setup - lightweight client only."""
 import logging
-import phoenix as px
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
-from openinference.instrumentation.crewai import CrewAIInstrumentor
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
 _tracer_provider = None
 
-def init_phoenix():
-    try:
-        session = px.launch_app()
-        logger.info(f"Phoenix running at: {session.url}")
-    except Exception as e:
-        logger.warning(f"Phoenix already running: {e}")
 
 def setup_tracer_provider() -> TracerProvider:
     global _tracer_provider
     if _tracer_provider:
         return _tracer_provider
-    exporter = OTLPSpanExporter(endpoint=f"http://{settings.phoenix_host}:{settings.phoenix_grpc_port}")
+
     provider = TracerProvider()
-    provider.add_span_processor(BatchSpanProcessor(exporter))
+
+    # Try Phoenix OTLP exporter first, fall back to console
+    try:
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        exporter = OTLPSpanExporter(
+            endpoint=f"http://{settings.phoenix_host}:{settings.phoenix_grpc_port}"
+        )
+        provider.add_span_processor(BatchSpanProcessor(exporter))
+        logger.info(f"Phoenix tracing enabled at {settings.phoenix_host}:{settings.phoenix_grpc_port}")
+    except Exception:
+        # Fall back to console exporter if Phoenix not running
+        provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+        logger.warning("Phoenix not available - using console span exporter")
+
     trace.set_tracer_provider(provider)
     _tracer_provider = provider
-    logger.info("Tracer provider configured.")
     return provider
 
-def instrument_llamaindex():
-    provider = setup_tracer_provider()
-    LlamaIndexInstrumentor().instrument(tracer_provider=provider)
-    logger.info("LlamaIndex instrumented.")
 
-def instrument_crewai():
+def instrument_llamaindex() -> None:
     provider = setup_tracer_provider()
-    CrewAIInstrumentor().instrument(tracer_provider=provider)
-    logger.info("CrewAI instrumented.")
+    try:
+        LlamaIndexInstrumentor().instrument(tracer_provider=provider)
+        logger.info("LlamaIndex instrumented with tracing.")
+    except Exception as e:
+        logger.warning(f"LlamaIndex instrumentation failed: {e}")
 
-def instrument_all():
-    setup_tracer_provider()
+
+def instrument_all() -> None:
     instrument_llamaindex()
-    instrument_crewai()
-    logger.info("All frameworks instrumented.")
+    logger.info("Tracing instrumentation complete.")

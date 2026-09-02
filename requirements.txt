@@ -21,8 +21,8 @@ psycopg2-binary==2.9.9
 pgvector==0.2.5
 sqlalchemy==2.0.35
 
-# Tracing
-arize-phoenix==4.5.0
+# Tracing (lightweight client only - no server needed)
+arize-phoenix-otel==0.6.1
 opentelemetry-api==1.27.0
 opentelemetry-sdk==1.27.0
 opentelemetry-exporter-otlp-proto-grpc==1.27.0
