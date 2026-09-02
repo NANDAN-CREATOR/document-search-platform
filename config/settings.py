@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     # Prompts
     prompts_dir: str = "./prompts"
 
-    # Data
-    data_dir: str = "./data"
+    # Data — point this to your PDF folder (Google Drive download target)
+    data_dir: str = "./documents"
 
     # Vector Store
     vector_table_name: str = "document_embeddings"
