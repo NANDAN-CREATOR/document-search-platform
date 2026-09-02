@@ -1,9 +1,50 @@
 {
-  "faithfulness": 0.0,
-  "answer_relevancy": 0.0,
-  "context_precision": 0.0,
+  "faithfulness": 0.48,
+  "answer_relevancy": 0.5,
+  "context_precision": 0.344,
   "num_questions": 5,
-  "per_question": [],
+  "per_question": [
+    {
+      "question": "What is the main topic of the documents?",
+      "answer": "The main topic of the documents is Artificial Intelligence in Modern Data Engineering.",
+      "chunks_retrieved": 4,
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.45
+    },
+    {
+      "question": "Summarise the key findings in the knowledge base.",
+      "answer": "The key findings in the knowledge base can be summarized as follows:\n\n* AI-powered data pipelines reduce manual intervention by up to 65% (Source: Artificial Intelligence in Modern Data Engineering)\n* Agentic AI systems can self-heal failing pipelines within seconds (Source: Artificial Intelligence ",
+      "chunks_retrieved": 4,
+      "faithfulness": 0.7,
+      "answer_relevancy": 0.2,
+      "context_precision": 0.3225
+    },
+    {
+      "question": "What methodology is described in the documents?",
+      "answer": "The methodology described in the documents is the use of Retrieval-Augmented Generation (RAG) architecture, Agentic AI, and Vector databases for building AI-powered data engineering pipelines. Specifically, the documents describe the RAG architecture, which combines vector-based document retrieval w",
+      "chunks_retrieved": 4,
+      "faithfulness": 0.8,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.405
+    },
+    {
+      "question": "List the important entities mentioned across the documents.",
+      "answer": "Based on the provided context, the important entities mentioned across the documents are:\n\n1. Agentic AI (Source 1: sample_document.pdf)\n2. Artificial Intelligence (Source 1: sample_document.pdf)\n3. LLM (Large Language Model) (Source 1: sample_document.pdf, Source 3: sample_document.pdf)\n4. Vector D",
+      "chunks_retrieved": 4,
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.1,
+      "context_precision": 0.21
+    },
+    {
+      "question": "What conclusions or recommendations are made?",
+      "answer": "Based on the provided context, the following conclusions or recommendations are made:\n\n1. Adopt Agentic AI for Pipeline Operations: Invest in agentic AI systems for autonomous pipeline monitoring, anomaly detection, and self-healing (Source: \"Artificial Intelligence in Modern Data Engineering\" repor",
+      "chunks_retrieved": 4,
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.5,
+      "context_precision": 0.3325
+    }
+  ],
   "settings": {
     "model": "llama3.2:3b",
     "embedding_model": "nomic-embed-text",
