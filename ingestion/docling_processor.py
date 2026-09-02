@@ -1,4 +1,4 @@
-"""Document preprocessing using Docling - OCR disabled for Windows compatibility."""
+"""Document preprocessing using PyPDF - no torch/OCR dependency."""
 import logging
 from pathlib import Path
 from typing import List, Dict, Any
@@ -7,48 +7,45 @@ logger = logging.getLogger(__name__)
 
 
 class DoclingProcessor:
-    """Process PDF documents using Docling without OCR."""
+    """Process PDF documents using PyPDF (no torch/OCR required)."""
 
     def __init__(self):
-        from docling.document_converter import DocumentConverter
-        from docling.datamodel.base_models import InputFormat
-        from docling.datamodel.pipeline_options import PdfPipelineOptions
-        from docling.document_converter import PdfFormatOption
-
-        # Disable OCR and EasyOCR to avoid torch/DLL issues on Windows
-        pipeline_options = PdfPipelineOptions()
-        pipeline_options.do_ocr = False
-        pipeline_options.do_table_structure = True
-
-        self.converter = DocumentConverter(
-            format_options={
-                InputFormat.PDF: PdfFormatOption(
-                    pipeline_options=pipeline_options
-                )
-            }
-        )
-        logger.info("DoclingProcessor initialized (OCR disabled)")
+        try:
+            import pypdf
+            self.use_pypdf = True
+            logger.info("DoclingProcessor initialized with PyPDF backend")
+        except ImportError:
+            raise ImportError("pypdf not installed. Run: pip install pypdf")
 
     def process_pdf(self, pdf_path: str) -> Dict[str, Any]:
         """Process a single PDF and return structured content."""
+        import pypdf
         path = Path(pdf_path)
         if not path.exists():
             raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
         logger.info(f"Processing PDF: {path.name}")
-        result = self.converter.convert(str(path))
-        doc = result.document
-        markdown_text = doc.export_to_markdown()
 
+        text_parts = []
+        with open(path, "rb") as f:
+            reader = pypdf.PdfReader(f)
+            num_pages = len(reader.pages)
+            for i, page in enumerate(reader.pages):
+                page_text = page.extract_text()
+                if page_text:
+                    text_parts.append(f"## Page {i+1}\n{page_text}")
+
+        full_text = "\n\n".join(text_parts)
         metadata = {
             "filename": path.name,
             "file_path": str(path.absolute()),
             "source": path.name,
+            "num_pages": num_pages,
         }
 
-        logger.info(f"Processed {path.name}: {len(markdown_text)} chars")
+        logger.info(f"Processed {path.name}: {len(full_text)} chars, {num_pages} pages")
         return {
-            "text": markdown_text,
+            "text": full_text,
             "metadata": metadata,
             "filename": path.name,
         }
