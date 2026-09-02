@@ -15,8 +15,8 @@ llama-index-llms-ollama==0.3.0
 llama-index-embeddings-ollama==0.3.0
 llama-index-vector-stores-postgres==0.2.0
 
-# litellm pinned to prebuilt wheel (avoid Rust compilation)
-litellm==1.57.5
+# litellm pinned to Windows-compatible version (no uvloop)
+litellm==1.52.9
 
 # Multi-Agent
 crewai>=0.67.0,<0.80.0
