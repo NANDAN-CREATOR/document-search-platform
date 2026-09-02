@@ -12,37 +12,52 @@ import argparse
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-# ----------------------------------------------------------------------
-# Patch: stub out the missing langchain_community.chat_models.vertexai
-# module that old ragas versions try to import.
-# This does NOT affect any other code - only fills the missing slot.
-# ----------------------------------------------------------------------
-def _patch_missing_vertexai():
+
+def _stub_module(name: str, **attrs):
+    """Inject a dummy module into sys.modules if not already present."""
+    if name not in sys.modules:
+        m = types.ModuleType(name)
+        for k, v in attrs.items():
+            setattr(m, k, v)
+        sys.modules[name] = m
+
+
+def _patch_ragas_deps():
+    """
+    Ragas <0.2 relies on langchain_community/langcore internals that
+    newer langchain versions removed. We stub them out so ragas can
+    import without crashing. No package is installed or changed.
+    """
+    # Stub parent modules first
+    _stub_module("langchain_community")
+    _stub_module("langchain_community.chat_models")
+    _stub_module("langchain_community.chat_models.vertexai", ChatVertexAI=object)
+
+    # Stub langchain_core.pydantic_v1 (removed in langchain-core 0.3+)
     try:
-        import langchain_community.chat_models.vertexai  # noqa: F401
+        from langchain_core import pydantic_v1  # noqa: F401
     except ImportError:
-        # Build minimal stub modules so ragas can import without crashing
-        class _ChatVertexAI:
-            pass
+        try:
+            # Try to point at pydantic v1 compat layer if available
+            import pydantic.v1 as _pydv1
+            _stub_module("langchain_core.pydantic_v1",
+                         BaseModel=_pydv1.BaseModel,
+                         Field=_pydv1.Field,
+                         root_validator=getattr(_pydv1, 'model_validator', lambda *a, **k: lambda f: f),
+                         validator=getattr(_pydv1, 'field_validator', lambda *a, **k: lambda f: f))
+        except ImportError:
+            # Fall back to plain pydantic v2
+            import pydantic as _pyd
+            def _noop_dec(*a, **k):
+                return lambda f: f
+            _stub_module("langchain_core.pydantic_v1",
+                         BaseModel=._pyd.BaseModel,
+                         Field=_pyd.Field,
+                         root_validator=_noop_dec,
+                         validator=_noop_dec)
 
-        stub = types.ModuleType("langchain_community.chat_models.vertexai.stub")
-        stub.ChatVertexAI = _ChatVertexAI
 
-        # Ensure parent modules exist in sys.modules
-        for mod_name in [
-            "langchain_community",
-            "langchain_community.chat_models",
-            "langchain_community.chat_models.vertexai",
-        ]:
-            if mod_name not in sys.modules:
-                m = types.ModuleType(mod_name)
-                sys.modules[mod_name] = m
-
-        sys.modules["langchain_community.chat_models.vertexai.stub"] = stub
-        sys.modules["langchain_community.chat_models.vertexai"].ChatVertexAI = _ChatVertexAI
-
-
-_patch_missing_vertexai()
+_patch_ragas_deps()
 
 # Now safe to import ragas
 from datasets import Dataset  # noqa: E402
