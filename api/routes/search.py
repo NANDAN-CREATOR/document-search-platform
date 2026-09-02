@@ -48,6 +48,7 @@ class ChatResponse(BaseModel):
     model: str
     choices: List[ChatChoice]
 
+# --- Search endpoint ---
 @router.post("/search", response_model=SearchResponse)
 async def search_documents(request: SearchRequest):
     if not request.query.strip():
@@ -64,7 +65,23 @@ async def search_documents(request: SearchRequest):
         logger.error(f"Search failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/v1/chat/completions", response_model=ChatResponse)
+# --- OpenWebUI compatible models endpoint ---
+@router.get("/models")
+async def list_models():
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": "document-search",
+                "object": "model",
+                "created": 1700000000,
+                "owned_by": "document-search-platform",
+            }
+        ]
+    }
+
+# --- OpenWebUI compatible chat completions endpoint ---
+@router.post("/chat/completions", response_model=ChatResponse)
 async def openwebui_chat(request: ChatRequest):
     last_user_msg = next((m for m in reversed(request.messages) if m.role == "user"), None)
     if not last_user_msg:
