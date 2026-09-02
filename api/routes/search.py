@@ -1,8 +1,10 @@
 import logging, uuid
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
 from agents.rag_pipeline import AgenticRAGPipeline
+import json
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -30,7 +32,7 @@ class SearchResponse(BaseModel):
 
 class ChatMessage(BaseModel):
     role: str
-    content: str
+    content: Any
 
 class ChatRequest(BaseModel):
     model: Optional[str] = "document-search"
@@ -47,6 +49,21 @@ class ChatResponse(BaseModel):
     object: str
     model: str
     choices: List[ChatChoice]
+
+# --- Models endpoint ---
+@router.get("/models")
+async def list_models():
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": "document-search",
+                "object": "model",
+                "created": 1700000000,
+                "owned_by": "document-search-platform",
+            }
+        ]
+    }
 
 # --- Search endpoint ---
 @router.post("/search", response_model=SearchResponse)
@@ -65,37 +82,88 @@ async def search_documents(request: SearchRequest):
         logger.error(f"Search failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- OpenWebUI compatible models endpoint ---
-@router.get("/models")
-async def list_models():
-    return {
-        "object": "list",
-        "data": [
-            {
-                "id": "document-search",
-                "object": "model",
-                "created": 1700000000,
-                "owned_by": "document-search-platform",
-            }
-        ]
-    }
+def _build_answer(query: str) -> tuple:
+    """Run pipeline and return (full_answer, model_name)."""
+    result = get_pipeline().run(query)
+    sources_text = "\n".join(
+        [f"- {s['filename']} (score: {s['score']:.3f})" for s in result["sources"]]
+    )
+    full_answer = (
+        f"{result['answer']}\n\n**Sources:**\n{sources_text}"
+        if result["sources"] else result["answer"]
+    )
+    return full_answer, result
 
-# --- OpenWebUI compatible chat completions endpoint ---
-@router.post("/chat/completions", response_model=ChatResponse)
+# --- OpenWebUI chat/completions endpoint ---
+@router.post("/chat/completions")
 async def openwebui_chat(request: ChatRequest):
-    last_user_msg = next((m for m in reversed(request.messages) if m.role == "user"), None)
+    last_user_msg = next(
+        (m for m in reversed(request.messages) if m.role == "user"), None
+    )
     if not last_user_msg:
         raise HTTPException(status_code=400, detail="No user message found")
+    
+    # Extract text content (handle both string and list formats)
+    content = last_user_msg.content
+    if isinstance(content, list):
+        query = " ".join([c.get("text", "") for c in content if isinstance(c, dict)])
+    else:
+        query = str(content)
+
     try:
-        result = get_pipeline().run(last_user_msg.content)
-        sources_text = "\n".join([f"- {s['filename']} (score: {s['score']:.3f})" for s in result["sources"]])
-        full_answer = f"{result['answer']}\n\n**Sources:**\n{sources_text}" if result["sources"] else result["answer"]
-        return ChatResponse(
-            id=f"chatcmpl-{uuid.uuid4().hex[:8]}",
-            object="chat.completion",
-            model=request.model or "document-search",
-            choices=[ChatChoice(index=0, message=ChatMessage(role="assistant", content=full_answer), finish_reason="stop")],
-        )
+        full_answer, result = _build_answer(query)
+        return {
+            "id": f"chatcmpl-{uuid.uuid4().hex[:8]}",
+            "object": "chat.completion",
+            "model": request.model or "document-search",
+            "choices": [{
+                "index": 0,
+                "message": {"role": "assistant", "content": full_answer},
+                "finish_reason": "stop"
+            }],
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        }
     except Exception as e:
         logger.error(f"Chat failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- OpenWebUI /responses endpoint (newer API format) ---
+@router.post("/responses")
+async def openwebui_responses(request: dict):
+    """Handle OpenWebUI responses API format."""
+    try:
+        # Extract query from input
+        input_data = request.get("input", "")
+        if isinstance(input_data, list):
+            # List of message objects
+            query = " ".join([
+                m.get("content", "") if isinstance(m.get("content"), str)
+                else " ".join([c.get("text", "") for c in m.get("content", []) if isinstance(c, dict)])
+                for m in input_data if m.get("role") == "user"
+            ])
+        else:
+            query = str(input_data)
+
+        if not query.strip():
+            query = "Hello"
+
+        full_answer, result = _build_answer(query)
+
+        return {
+            "id": f"resp-{uuid.uuid4().hex[:8]}",
+            "object": "response",
+            "model": request.get("model", "document-search"),
+            "output": [
+                {
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [
+                        {"type": "output_text", "text": full_answer}
+                    ]
+                }
+            ],
+            "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+        }
+    except Exception as e:
+        logger.error(f"Responses endpoint failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
