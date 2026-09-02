@@ -146,7 +146,7 @@ class RAGEvaluator:
             try:
                 result = self.pipeline.run(question)
                 answer = result.get("answer", "")
-                chunks = self.retrieval_agent.retrieve(question)
+                chunks = self.retrieval_agent.run(question)
                 contexts = [c["text"] for c in chunks if c.get("text")]
 
                 logger.info("  Scoring faithfulness...")
