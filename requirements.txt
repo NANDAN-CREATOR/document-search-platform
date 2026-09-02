@@ -6,27 +6,30 @@ pydantic-settings==2.5.2
 python-dotenv==1.0.1
 python-multipart==0.0.12
 
-# Document Processing
+# Document Processing (pypdf - no torch dependency)
+pypdf>=4.0.0
 docling==2.5.0
 
 # RAG & Vector Store
 llama-index-core==0.11.0.post1
 llama-index-llms-ollama==0.3.0
 llama-index-embeddings-ollama==0.3.0
-llama-index-vector-stores-postgres==0.2.0
+llama-index-vector-stores-postgres>=0.2.0
 llama-index==0.11.0
 
 # PostgreSQL + PGVector
 psycopg2-binary==2.9.9
 pgvector==0.2.5
 sqlalchemy==2.0.35
+asyncpg>=0.29.0
 
-# Tracing (lightweight client only - no server needed)
+# Tracing
 arize-phoenix-otel==0.6.1
 opentelemetry-api==1.27.0
 opentelemetry-sdk==1.27.0
 opentelemetry-exporter-otlp-proto-grpc==1.27.0
 openinference-instrumentation-llama-index==2.2.4
+setuptools>=65.0.0
 
 # Evaluation
 ragas==0.1.21

@@ -3,7 +3,6 @@ import logging
 from typing import List, Optional
 
 from llama_index.core import VectorStoreIndex, StorageContext
-from llama_index.vector_stores.postgres import PGVectorStore
 from llama_index.core.schema import TextNode
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.ollama import Ollama
@@ -27,24 +26,28 @@ class PGVectorIndexer:
             base_url=settings.ollama_base_url,
         )
         init_pgvector()
-        self.vector_store = PGVectorStore.from_params(
-            host=settings.postgres_host,
-            port=str(settings.postgres_port),
-            database=settings.postgres_db,
-            user=settings.postgres_user,
-            password=settings.postgres_password,
-            table_name=settings.vector_table_name,
-            embed_dim=settings.embedding_dimension,
-            hnsw_kwargs={
-                "hnsw_m": 16,
-                "hnsw_ef_construction": 64,
-                "hnsw_ef_search": 40,
-                "hnsw_dist_method": "vector_cosine_ops",
-            },
-        )
-        self.storage_context = StorageContext.from_defaults(
-            vector_store=self.vector_store
-        )
+        self._init_vector_store()
+
+    def _init_vector_store(self):
+        """Initialize PGVector store with compatibility handling."""
+        try:
+            from llama_index.vector_stores.postgres import PGVectorStore
+            self.vector_store = PGVectorStore.from_params(
+                host=settings.postgres_host,
+                port=str(settings.postgres_port),
+                database=settings.postgres_db,
+                user=settings.postgres_user,
+                password=settings.postgres_password,
+                table_name=settings.vector_table_name,
+                embed_dim=settings.embedding_dimension,
+            )
+            self.storage_context = StorageContext.from_defaults(
+                vector_store=self.vector_store
+            )
+            logger.info("PGVector store initialized successfully")
+        except Exception as e:
+            logger.error(f"PGVector init failed: {e}")
+            raise
 
     def index_nodes(self, nodes: List[TextNode]) -> VectorStoreIndex:
         logger.info(f"Indexing {len(nodes)} nodes into PGVector...")
