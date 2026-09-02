@@ -1,0 +1,13 @@
+{
+  "faithfulness": 0.0,
+  "answer_relevancy": 0.0,
+  "context_precision": 0.0,
+  "num_questions": 5,
+  "per_question": [],
+  "settings": {
+    "model": "llama3.2:3b",
+    "embedding_model": "nomic-embed-text",
+    "similarity_top_k": 5,
+    "data_dir": "./data"
+  }
+}
