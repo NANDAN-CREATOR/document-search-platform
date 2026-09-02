@@ -15,10 +15,13 @@ llama-index-llms-ollama==0.3.0
 llama-index-embeddings-ollama==0.3.0
 llama-index-vector-stores-postgres==0.2.0
 
+# litellm pinned to prebuilt wheel (avoid Rust compilation)
+litellm==1.57.5
+
 # Multi-Agent
 crewai>=0.67.0,<0.80.0
 
-# Vector Database - PostgreSQL + PGVector
+# Vector Database
 psycopg2-binary==2.9.9
 pgvector==0.2.5
 sqlalchemy==2.0.35
