@@ -19,9 +19,8 @@ from typing import List, Dict, Any, Optional
 import requests
 
 from config.settings import settings
-from agents.retrieval_agent import RetrievalAgent
+from agents.rag_pipeline import RetrieverAgent as RetrievalAgent
 from agents.rag_pipeline import AgenticRAGPipeline
-
 logger = logging.getLogger(__name__)
 
 DEFAULT_QUESTIONS: List[str] = [
