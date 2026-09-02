@@ -15,11 +15,8 @@ llama-index-llms-ollama==0.3.0
 llama-index-embeddings-ollama==0.3.0
 llama-index-vector-stores-postgres==0.2.0
 
-# litellm pinned to Windows-compatible version (no uvloop)
-litellm==1.52.9
-
-# Multi-Agent
-crewai>=0.67.0,<0.80.0
+# Multi-Agent - pinned to avoid heavy dependency chain
+crewai==0.51.0
 
 # Vector Database
 psycopg2-binary==2.9.9
