@@ -24,6 +24,19 @@ A production-grade **Agentic RAG Document Search Platform** that allows users to
 
 ---
 
+## Documentation
+
+Supplementary technical documents are in the [`/doc`](./doc) directory:
+
+| Document | Description |
+|----------|-------------|
+| [doc/architecture.md](./doc/architecture.md) | Solution architecture and design diagrams |
+| [doc/api_swagger.yaml](./doc/api_swagger.yaml) | Complete REST API specification (OpenAPI 3.0 / Swagger) |
+| [doc/presentation.md](./doc/presentation.md) | Presentation deck — slide-by-slide reference |
+| [doc/ragas_evaluation.md](./doc/ragas_evaluation.md) | RAGAs evaluation methodology, metrics, and how to run |
+
+---
+
 ## Architecture
 
 ```
@@ -93,41 +106,41 @@ User Query
 
 ```
 document-search-platform/
-├── ingestion/                 # Document ingestion pipeline
-│   ├── docling_processor.py   # PDF preprocessing (Docling / PyPDF fallback)
-│   ├── embedder.py            # Chunking + Ollama embeddings
-│   ├── pgvector_indexer.py    # PostgreSQL PGVector indexing
-│   └── pipeline.py            # Pipeline orchestrator
-├── agents/                    # Multi-agent RAG system
-│   ├── rag_pipeline.py        # 3-agent orchestrator
-│   ├── retrieval_agent.py     # Document retrieval agent
-│   ├── reasoning_agent.py     # Answer generation agent
-│   └── crew_config.py         # Agent configuration
-├── api/                       # FastAPI REST API
-│   ├── main.py                # App entry point
-│   └── routes/
-│       ├── search.py          # Search + OpenWebUI endpoints
-│       ├── ingest.py          # Ingestion endpoints
-│       └── health.py          # Health check endpoints
-├── prompts/                   # Externalized prompt templates
-│   ├── system_prompt.yaml     # All prompt templates
-│   └── prompt_manager.py      # Prompt loader
-├── evaluation/
-│   └── ragas_eval.py          # RAGAs evaluation pipeline
-├── tracing/
-│   └── phoenix_setup.py       # Arize Phoenix instrumentation
-├── config/
-│   ├── settings.py            # Pydantic settings
-│   └── database.py            # PostgreSQL + PGVector setup
-├── doc/                       # Technical documentation
-│   ├── architecture.md        # Architecture diagrams
-│   └── api_swagger.yaml       # OpenAPI specification
-├── tests/                     # Test suite
-├── data/                      # PDF documents (gitignored)
-├── docker-compose.yml         # Full stack deployment
-├── Dockerfile                 # API container
-├── requirements.txt           # Python dependencies
-└── .env.example               # Environment variables template
+âââ ingestion/                 # Document ingestion pipeline
+â   âââ docling_processor.py   # PDF preprocessing (Docling / PyPDF fallback)
+â   âââ embedder.py            # Chunking + Ollama embeddings
+â   âââ pgvector_indexer.py    # PostgreSQL PGVector indexing
+â   âââ pipeline.py            # Pipeline orchestrator
+âââ agents/                    # Multi-agent RAG system
+â   âââ rag_pipeline.py        # 3-agent orchestrator
+â   âââ retrieval_agent.py     # Document retrieval agent
+â   âââ reasoning_agent.py     # Answer generation agent
+â   âââ crew_config.py         # Agent configuration
+âââ api/                       # FastAPI REST API
+â   âââ main.py                # App entry point
+â   âââ routes/
+â       âââ search.py          # Search + OpenWebUI endpoints
+â       âââ ingest.py          # Ingestion endpoints
+â       âââ health.py          # Health check endpoints
+âââ prompts/                   # Externalized prompt templates
+â   âââ system_prompt.yaml     # All prompt templates
+â   âââ prompt_manager.py      # Prompt loader
+âââ evaluation/
+â   âââ ragas_eval.py          # RAGAs evaluation pipeline
+âââ tracing/
+â   âââ phoenix_setup.py       # Arize Phoenix instrumentation
+âââ config/
+â   âââ settings.py            # Pydantic settings
+â   âââ database.py            # PostgreSQL + PGVector setup
+âââ doc/                       # Technical documentation
+â   âââ architecture.md        # Architecture diagrams
+â   âââ api_swagger.yaml       # OpenAPI specification
+âââ tests/                     # Test suite
+âââ data/                      # PDF documents (gitignored)
+âââ docker-compose.yml         # Full stack deployment
+âââ Dockerfile                 # API container
+âââ requirements.txt           # Python dependencies
+âââ .env.example               # Environment variables template
 ```
 
 ---
@@ -191,7 +204,7 @@ open-webui serve
 
 ### 9. Configure OpenWebUI
 1. Open http://localhost:8080
-2. Go to Settings → Connections
+2. Go to Settings â Connections
 3. Add OpenAI API: `http://localhost:8000/api/v1` with key `dummy`
 4. Select model `document-search` and start chatting!
 
@@ -320,9 +333,9 @@ print(metrics)
 - **Production:** On Linux/Mac or x64 Windows, Docling works natively with full OCR and table extraction support
 
 ### CrewAI (Multi-Agent)
-- **Issue:** `crewai>=0.67.0` pulls `embedchain` → `google-cloud-aiplatform` → a 500MB+ dependency chain including `litellm` which requires Rust compilation on Windows
+- **Issue:** `crewai>=0.67.0` pulls `embedchain` â `google-cloud-aiplatform` â a 500MB+ dependency chain including `litellm` which requires Rust compilation on Windows
 - **Root cause:** CrewAI's dependency resolution on Windows ARM64 hits multiple compilation requirements
-- **Adaptation:** `agents/rag_pipeline.py` implements an equivalent 3-agent system (Retriever → Reasoner → Validator) using the same architectural pattern as CrewAI's sequential process, built directly on LlamaIndex and Ollama
+- **Adaptation:** `agents/rag_pipeline.py` implements an equivalent 3-agent system (Retriever â Reasoner â Validator) using the same architectural pattern as CrewAI's sequential process, built directly on LlamaIndex and Ollama
 - **Production:** On Linux, CrewAI installs and runs natively
 
 ### Arize Phoenix (Tracing)
@@ -360,6 +373,6 @@ docker-compose up -d
 
 ## Author
 
-**Aman Nandan** — Senior Data & AI Engineer
+**Aman Nandan** â Senior Data & AI Engineer
 - GitHub: [github.com/NANDAN-CREATOR](https://github.com/NANDAN-CREATOR)
 - Portfolio: [nandan-creator.github.io/Freelance_Portfolio](https://nandan-creator.github.io/Freelance_Portfolio)
