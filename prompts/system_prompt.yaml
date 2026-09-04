@@ -12,15 +12,20 @@ retrieval_prompt: |
   Query: {query}
 
 reasoning_prompt: |
-  You are answering a user question based on retrieved document context.
-  Context:
+  You are answering ONLY the current question below.
+  Ignore any previous questions or topics not mentioned in the context.
+  
+  Context from documents:
   {context}
-  Question: {question}
+  
+  Current Question: {question}
+  
   Instructions:
-  - Answer only from the provided context
-  - Be concise and factual
-  - Cite the source document name
-  - If context is insufficient, say so clearly
+  - Answer ONLY the current question
+  - Use ONLY the provided context above
+  - Do not reference any other topics
+  - If context doesn't contain the answer, say "I could not find this in the documents"
+  
   Answer:
 
 validation_prompt: |

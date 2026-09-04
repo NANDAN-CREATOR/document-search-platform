@@ -135,14 +135,31 @@ async def openwebui_responses(request: dict):
         # Extract query from input
         input_data = request.get("input", "")
         if isinstance(input_data, list):
-            # List of message objects
-            query = " ".join([
-                m.get("content", "") if isinstance(m.get("content"), str)
-                else " ".join([c.get("text", "") for c in m.get("content", []) if isinstance(c, dict)])
-                for m in input_data if m.get("role") == "user"
-            ])
+            # Get ONLY the last user message — not entire chat history
+            last_user = next(
+                (m for m in reversed(input_data) if m.get("role") == "user"), None
+            )
+            if last_user:
+                content = last_user.get("content", "")
+                if isinstance(content, list):
+                    query = " ".join([c.get("text", "") for c in content if isinstance(c, dict)])
+                else:
+                    query = str(content)
+            else:
+                query = ""
         else:
             query = str(input_data)
+
+        # Block OpenWebUI internal system prompts
+        if query.strip().startswith("###"):
+            return {
+                "id": f"resp-skip",
+                "object": "response",
+                "model": request.get("model", "document-search"),
+                "output": [{"type": "message", "role": "assistant",
+                            "content": [{"type": "output_text", "text": ""}]}],
+                "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+            }
 
         if not query.strip():
             query = "Hello"
